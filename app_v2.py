@@ -5,52 +5,50 @@ import google.generativeai as genai
 import json
 from datetime import datetime
 
-Setup
 api_key = st.secrets.get("GOOGLE_API_KEY")
+
 if api_key and api_key.startswith("AIza"):
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-1.5-flash')
 else:
-st.sidebar.error("API Key Error")
+st.sidebar.error("Key Error")
 
-Logic
 def analyze_text(text):
-prompt = f"Analyze risk, return JSON: {{'score':0-10, 'label':'type', 'indicator':'index', 'values':[5 numbers], 'summary':'text'}}. Content: {text}"
+p = f"Analyze: {text}. Return JSON: {{'score':0, 'values':[0,0,0,0,0], 'summary':''}}"
 try:
-response = model.generate_content(prompt)
+response = model.generate_content(p)
 t = response.text.strip().replace('json', '').replace('', '').strip()
 return json.loads(t)
 except:
 return None
 
-UI
-st.set_page_config(page_title="SharpShield Pro", layout="wide")
+st.set_page_config(page_title="SharpShield", layout="wide")
 st.title("🛡️ SharpShield Pro")
 
 if 'history' not in st.session_state:
 st.session_state['history'] = []
 
-col1, col2 = st.columns([1, 1.2])
+c1, c2 = st.columns([1, 1.2])
 
-with col1:
-user_input = st.text_area("Input Text", height=250)
-if st.button("Scan") and user_input:
+with c1:
+u = st.text_area("Input Text", height=250)
+if st.button("Scan") and u:
 with st.spinner("Analyzing..."):
-res = analyze_text(user_input)
+res = analyze_text(u)
 if res:
 st.session_state['result'] = res
-st.session_state['history'].insert(0, {"Time": datetime.now().strftime("%H:%M:%S"), "Score": res['score']})
+st.session_state['history'].insert(0, {"Time": datetime.now().strftime("%H:%M"), "Score": res['score']})
 
-with col2:
+with c2:
 if 'result' in st.session_state:
 res = st.session_state['result']
-st.metric("Risk Score", f"{res['score']} / 10")
-df = pd.DataFrame(dict(r=res['values'], theta=['Religion','Tech','Politics','Econ','Media']))
+st.metric("Risk Score", res['score'])
+df = pd.DataFrame(dict(r=res['values'], theta=['Religion','Tech','Politics','Economy','Media']))
 fig = px.line_polar(df, r='r', theta='theta', line_close=True)
 st.plotly_chart(fig, use_container_width=True)
 st.success(res['summary'])
 else:
-st.info("Awaiting scan...")
+st.info("Awaiting scan results...")
 
 with st.sidebar:
 st.write("### History")

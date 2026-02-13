@@ -191,4 +191,5 @@ if st.button("🚀 启动全维扫描 (Analyze)"):
             )
 
             st.success("分析完成，数据已归档至本地数据库。")
+
             st.rerun() # 刷新以更新侧边栏历史记录

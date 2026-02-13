@@ -8,7 +8,7 @@ from datetime import datetime
 api_key = st.secrets.get("GOOGLE_API_KEY")
 
     if api_key:
-genai.configure(api_key=api_key)
+    genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
     def analyze_text(text):
@@ -57,3 +57,4 @@ st.info("Awaiting scan results...")
 st.write("### History")
     if st.session_state['history']:
 st.table(pd.DataFrame(st.session_state['history']))
+

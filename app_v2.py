@@ -5,7 +5,7 @@ import google.generativeai as genai
 import json
 from datetime import datetime
 
-核心配置
+#核心配置
 api_key = st.secrets.get("GOOGLE_API_KEY")
 if api_key and api_key.startswith("AIza"):
 genai.configure(api_key=api_key)
@@ -13,7 +13,7 @@ model = genai.GenerativeModel('gemini-1.5-flash')
 else:
 st.sidebar.error("API Key 缺失或错误")
 
-分析逻辑
+#分析逻辑
 def analyze_text(text):
 prompt = f"分析该文本的风险，以JSON返回: {{'score':0-10, 'label':'标签', 'indicator':'指标', 'values':[5个数值], 'summary':'结论'}}。内容: {text}"
 try:
@@ -23,7 +23,7 @@ return json.loads(t)
 except:
 return None
 
-界面展示
+#界面展示
 st.set_page_config(page_title="SharpShield Pro", layout="wide")
 st.title("🛡️ SharpShield Pro 锐实力防御系统")
 
@@ -58,3 +58,4 @@ with st.sidebar:
 st.write("### 📜 历史记录")
 if st.session_state['history']:
 st.table(pd.DataFrame(st.session_state['history']))
+

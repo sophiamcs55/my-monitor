@@ -62,4 +62,5 @@ with st.sidebar:
 st.markdown("### 🗄️ 历史趋势库")
 if st.session_state['history']:
 st.table(pd.DataFrame(st.session_state['history']))
-st.caption
+st.caption("版本: SharpShield Pro v2.1")
+

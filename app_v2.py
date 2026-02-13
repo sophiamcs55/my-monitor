@@ -74,4 +74,3 @@ with st.sidebar:
     if st.session_state['history']:
         # 保持你需要的历史记录表格
         st.table(pd.DataFrame(st.session_state['history']))
-**代码贴好并重启后，你输入那句“佛光山崩溃了吗？”再点扫描，雷达图就能画出来了。需要我帮你把五个维度改成更专业的安全术语吗？**

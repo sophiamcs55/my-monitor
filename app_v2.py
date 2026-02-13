@@ -6,11 +6,10 @@ import json
 from datetime import datetime
 
 api_key = st.secrets.get("GOOGLE_API_KEY")
-if api_key and api_key.startswith("AIza"):
+
+if api_key:
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-1.5-flash')
-else:
-st.sidebar.error("API Key Error")
 
 def analyze_text(text):
 p = f"Analyze: {text}. Return JSON: {{'score':0, 'values':[0,0,0,0,0], 'summary':''}}"
@@ -34,7 +33,7 @@ c1, c2 = st.columns([1, 1.2])
 with c1:
 u = st.text_area("Input Text", height=250)
 if st.button("Scan") and u:
-with st.spinner("Analyzing..."):
+with st.spinner("Scanning..."):
 res = analyze_text(u)
 if res:
 st.session_state['result'] = res
@@ -44,7 +43,10 @@ with c2:
 if 'result' in st.session_state:
 res = st.session_state['result']
 st.metric("Risk Score", res.get('score', 0))
-df = pd.DataFrame(dict(r=res.get('values', [0,0,0,0,0]), theta=['Religion','Tech','Politics','Economy','Media']))
+df = pd.DataFrame(dict(
+r=res.get('values', [0,0,0,0,0]),
+theta=['Religion','Tech','Politics','Economy','Media']
+))
 fig = px.line_polar(df, r='r', theta='theta', line_close=True)
 st.plotly_chart(fig, use_container_width=True)
 st.success(res.get('summary', ''))

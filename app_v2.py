@@ -6,30 +6,41 @@ import json
 import re
 from datetime import datetime
 
-# 1. 引擎配置
+# 1. 引擎配置与自检
 api_key = st.secrets.get("GOOGLE_API_KEY")
 if api_key:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        # 测试 API 是否可用
+        st.sidebar.success("✅ API 连接正常")
+    except Exception as e:
+        st.sidebar.error(f"❌ API 配置失败: {str(e)}")
 else:
-    st.sidebar.error("❌ 未检测到 API Key，请检查 Secrets 配置")
+    st.sidebar.error("❌ 未检测到 API Key，请检查 Secrets")
 
-# 2. 强力数据解析逻辑
+# 2. 强力数据抓取逻辑
 def analyze_text(text):
-    prompt = f"分析该文本的风险，只返回一个 JSON 格式。格式: {{'score': 0-10, 'values': [5个数字], 'summary': '总结'}}。内容: {text}"
+    prompt = f"分析该文本的风险，只返回一个纯 JSON 格式。格式: {{\"score\": 0, \"values\": [0,0,0,0,0], \"summary\": \"\"}}。内容: {text}"
     try:
         response = model.generate_content(prompt)
+        # 检查是否被安全拦截
+        if not response.parts:
+            st.sidebar.warning("⚠️ AI 拒绝回答：内容可能触发了安全过滤")
+            return None
+        
         res_text = response.text.strip()
-        # 核心修复：使用正则表达式精准抓取 JSON 块
         match = re.search(r'\{.*\}', res_text, re.DOTALL)
         if match:
-            json_str = match.group().replace("'", '"') # 统一引号格式
-            return json.loads(json_str)
+            # 自动修复 AI 返回的单引号问题
+            clean_json = match.group().replace("'", '"')
+            return json.loads(clean_json)
         return None
-    except:
+    except Exception as e:
+        st.sidebar.error(f"❌ 解析错误: {str(e)}")
         return None
 
-# 3. 界面显示
+# 3. 界面布局
 st.set_page_config(page_title="SharpShield Pro", layout="wide")
 st.title("🛡️ SharpShield Pro 锐实力防御系统")
 
@@ -40,9 +51,9 @@ c1, c2 = st.columns([1, 1.2])
 
 with c1:
     st.subheader("📝 情报输入")
-    u = st.text_area("在此粘贴需要扫描的文本：", height=250)
+    u = st.text_area("在此粘贴文本：", height=250, placeholder="请输入需要分析的文字...")
     if st.button("🚀 启动扫描") and u:
-        with st.spinner("AI 正在深度解析中..."):
+        with st.spinner("AI 正在解析多维度情报..."):
             res = analyze_text(u)
             if res:
                 st.session_state['result'] = res
@@ -51,7 +62,7 @@ with c1:
                     "评分": res.get('score', 0)
                 })
             else:
-                st.error("⚠️ 扫描引擎响应异常，请重试或检查 API 状态。")
+                st.error("⚠️ 扫描引擎响应异常。请查看左侧边栏的错误诊断。")
 
 with c2:
     st.subheader("📊 分析看板")
@@ -59,7 +70,6 @@ with c2:
         res = st.session_state['result']
         st.metric("风险评分", f"{res.get('score', 0)} / 10")
         
-        # 绘制雷达图
         df = pd.DataFrame(dict(
             r=res.get('values', [0,0,0,0,0]), 
             theta=['宗教','技术','政治','经济','媒体']
@@ -68,7 +78,7 @@ with c2:
         st.plotly_chart(fig, use_container_width=True)
         st.success(f"**分析总结：** {res.get('summary', '解析完成')}")
     else:
-        st.info("💡 终端已就绪。请在左侧输入文本并点击扫描。")
+        st.info("💡 终端就绪。请输入文本后开始扫描。")
 
 with st.sidebar:
     st.write("### 📜 历史记录")

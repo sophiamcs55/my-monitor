@@ -6,12 +6,11 @@ import json
 from datetime import datetime
 
 api_key = st.secrets.get("GOOGLE_API_KEY")
-
 if api_key and api_key.startswith("AIza"):
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-1.5-flash')
 else:
-st.sidebar.error("Key Error")
+st.sidebar.error("API Key Error")
 
 def analyze_text(text):
 p = f"Analyze: {text}. Return JSON: {{'score':0, 'values':[0,0,0,0,0], 'summary':''}}"
@@ -42,11 +41,11 @@ st.session_state['history'].insert(0, {"Time": datetime.now().strftime("%H:%M"),
 with c2:
 if 'result' in st.session_state:
 res = st.session_state['result']
-st.metric("Risk Score", res['score'])
-df = pd.DataFrame(dict(r=res['values'], theta=['Religion','Tech','Politics','Economy','Media']))
+st.metric("Risk Score", res.get('score', 0))
+df = pd.DataFrame(dict(r=res.get('values', [0,0,0,0,0]), theta=['Religion','Tech','Politics','Economy','Media']))
 fig = px.line_polar(df, r='r', theta='theta', line_close=True)
 st.plotly_chart(fig, use_container_width=True)
-st.success(res['summary'])
+st.success(res.get('summary', ''))
 else:
 st.info("Awaiting scan results...")
 

@@ -37,7 +37,7 @@ with st.spinner("Analyzing..."):
 res = analyze_text(u)
 if res:
 st.session_state['result'] = res
-st.session_state['history'].insert(0, {"Time": datetime.now().strftime("%H:%M"), "Score": res['score']})
+st.session_state['history'].insert(0, {"Time": datetime.now().strftime("%H:%M"), "Score": res.get('score', 0)})
 
 with c2:
 if 'result' in st.session_state:

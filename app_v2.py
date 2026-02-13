@@ -6,41 +6,42 @@ import json
 import re
 from datetime import datetime
 
-# 1. 引擎配置：修复 404 模型找不到的问题
+# 1. 引擎核心配置（增加自动备选机制）
 api_key = st.secrets.get("GOOGLE_API_KEY")
+model = None
+
 if api_key:
     try:
         genai.configure(api_key=api_key)
-        # 显式初始化模型
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        st.sidebar.success("✅ API 系统连接已建立")
+        # 尝试使用最快的 Flash 模型，如果失败则自动切换
+        try:
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            # 简单测试一下
+            model.generate_content("test")
+            st.sidebar.success("✅ Flash 引擎就绪")
+        except:
+            model = genai.GenerativeModel('gemini-pro')
+            st.sidebar.warning("⚠️ Flash 不可用，已降级至 Pro 引擎")
     except Exception as e:
         st.sidebar.error(f"❌ 引擎初始化失败: {str(e)}")
 else:
-    st.sidebar.error("❌ 未检测到 API Key，请检查 Secrets 配置")
+    st.sidebar.error("❌ 未检测到 API Key")
 
-# 2. 强效数据抓取与解析逻辑
+# 2. 强力数据提取（无视 AI 的废话）
 def analyze_text(text):
-    # 强制 AI 只返回 JSON 格式，不废话
-    prompt = f"请分析以下文本的风险，只返回一个 JSON 格式，严禁包含任何说明文字。格式必须为: {{\"score\": 0, \"values\": [0,0,0,0,0], \"summary\": \"\"}}。待分析文本: {text}"
+    prompt = f"分析风险并只返回JSON: {{'score':0-10,'values':[5个数字],'summary':'总结'}}。内容: {text}"
     try:
+        if not model: return None
         response = model.generate_content(prompt)
-        # 检查 AI 是否因为安全策略拒绝回答
-        if not response.candidates or not response.candidates[0].content.parts:
-            return {"score": 0, "values": [0,0,0,0,0], "summary": "AI 无法分析此内容（可能涉及安全过滤机制）。"}
-            
-        res_text = response.text.strip()
-        # 使用正则表达式强力抓取最外层的 { ... } 块，忽略所有 Markdown 干扰
-        match = re.search(r'\{.*\}', res_text, re.DOTALL)
+        # 提取括号内的 JSON
+        match = re.search(r'\{.*\}', response.text, re.DOTALL)
         if match:
-            clean_json = match.group().replace("'", '"')
-            return json.loads(clean_json)
+            return json.loads(match.group().replace("'", '"'))
         return None
-    except Exception as e:
-        st.sidebar.error(f"❌ 运行中错误: {str(e)}")
+    except:
         return None
 
-# 3. 界面布局与汉化
+# 3. 界面布局
 st.set_page_config(page_title="SharpShield Pro", layout="wide")
 st.title("🛡️ SharpShield Pro 锐实力防御系统")
 
@@ -51,35 +52,30 @@ c1, c2 = st.columns([1, 1.2])
 
 with c1:
     st.subheader("📝 情报输入")
-    u = st.text_area("在此粘贴需要扫描的文本：", height=250, placeholder="请输入文字...")
+    u = st.text_area("在此粘贴文本：", height=250, placeholder="请输入内容...")
     if st.button("🚀 启动扫描") and u:
-        with st.spinner("AI 正在深度解析中..."):
+        with st.spinner("AI 正在深度扫描..."):
             res = analyze_text(u)
             if res:
                 st.session_state['result'] = res
-                st.session_state['history'].insert(0, {
-                    "时间": datetime.now().strftime("%H:%M:%S"), 
-                    "评分": res.get('score', 0)
-                })
+                st.session_state['history'].insert(0, {"时间": datetime.now().strftime("%H:%M"), "评分": res.get('score', 0)})
             else:
-                st.error("⚠️ 扫描引擎解析失败，请检查左侧边栏诊断信息。")
+                st.error("⚠️ 扫描失败：模型响应异常或内容被拦截。")
 
 with c2:
     st.subheader("📊 分析看板")
     if 'result' in st.session_state:
         res = st.session_state['result']
         st.metric("风险评分", f"{res.get('score', 0)} / 10")
-        
-        # 绘制雷达图
         df = pd.DataFrame(dict(
             r=res.get('values', [0,0,0,0,0]), 
             theta=['宗教','技术','政治','经济','媒体']
         ))
         fig = px.line_polar(df, r='r', theta='theta', line_close=True)
         st.plotly_chart(fig, use_container_width=True)
-        st.success(f"**分析总结：** {res.get('summary', '解析完成')}")
+        st.success(f"**分析总结：** {res.get('summary', '')}")
     else:
-        st.info("💡 系统就绪。请在左侧输入文本后点击扫描。")
+        st.info("💡 终端就绪。请输入文本后点击扫描。")
 
 with st.sidebar:
     st.write("### 📜 历史记录")

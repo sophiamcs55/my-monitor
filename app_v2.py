@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 
 api_key = st.secrets.get("GOOGLE_API_KEY")
+
 if api_key and api_key.startswith("AIza"):
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-1.5-flash')

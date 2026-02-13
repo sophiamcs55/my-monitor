@@ -5,7 +5,7 @@ import google.generativeai as genai
 import json
 from datetime import datetime
 
-# 1. API Configuration
+# 1. Setup API
 api_key = st.secrets.get("GOOGLE_API_KEY")
 if api_key:
     genai.configure(api_key=api_key)
@@ -13,12 +13,13 @@ if api_key:
 else:
     st.sidebar.error("API Key Missing")
 
-# 2. Logic
+# 2. Logic to Get AI Data
 def analyze_text(text):
-    p = f"Analyze: {text}. Return JSON: {{'score':0, 'values':[0,0,0,0,0], 'summary':''}}"
+    prompt = f"Analyze risk: {text}. Return ONLY JSON: {{'score':0-10, 'values':[5 numbers], 'summary':'...'}}"
     try:
-        response = model.generate_content(p)
+        response = model.generate_content(prompt)
         t = response.text.strip()
+        # Clean Markdown characters
         if "```json" in t:
             t = t.split("```json")[1].split("```")[0]
         elif "```" in t:
@@ -28,8 +29,8 @@ def analyze_text(text):
         return None
 
 # 3. UI Interface
-st.set_page_config(page_title="SharpShield", layout="wide")
-st.title("SharpShield Pro")
+st.set_page_config(page_title="SharpShield Pro", layout="wide")
+st.title("🛡️ SharpShield Pro")
 
 if 'history' not in st.session_state:
     st.session_state['history'] = []
@@ -39,11 +40,13 @@ c1, c2 = st.columns([1, 1.2])
 with c1:
     u = st.text_area("Input Text", height=250)
     if st.button("Scan") and u:
-        with st.spinner("Scanning..."):
+        with st.spinner("Analyzing..."):
             res = analyze_text(u)
             if res:
                 st.session_state['result'] = res
                 st.session_state['history'].insert(0, {"Time": datetime.now().strftime("%H:%M"), "Score": res.get('score', 0)})
+            else:
+                st.error("AI Error: Failed to parse data.")
 
 with c2:
     if 'result' in st.session_state:
@@ -55,7 +58,7 @@ with c2:
         ))
         fig = px.line_polar(df, r='r', theta='theta', line_close=True)
         st.plotly_chart(fig, use_container_width=True)
-        st.success(res.get('summary', ''))
+        st.success(res.get('summary', 'Scan Complete'))
     else:
         st.info("Awaiting scan results...")
 

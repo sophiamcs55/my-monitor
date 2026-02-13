@@ -1,0 +1,7 @@
+streamlit
+pandas
+plotly
+fpdf
+beautifulsoup4
+requests
+google-generativeai

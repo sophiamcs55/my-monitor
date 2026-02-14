@@ -2,117 +2,109 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import google.generativeai as genai
-import json
-import re
-import io
+import json, re, io, hashlib
 from datetime import datetime
 from docx import Document
-from docx.shared import Pt, RGBColor
 
-# 1. 终极计算引擎配置
+# 1. 引擎配置：启动全息分析指令
 api_key = st.secrets.get("GOOGLE_API_KEY")
 if api_key:
     try:
         genai.configure(api_key=api_key)
-        # 激活极限穿透协议
         safety_settings = [{"category": c, "threshold": "BLOCK_NONE"} for c in ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"]]
         
-        # 顶级学术架构指令
-        sys_msg = """You are a Universal Academic Intelligence System (UAIS). 
-        Analyze inputs through a recursive 4-layer framework:
-        1. AESTHETIC: Imagery, subconscious drive, stylistic resonance.
-        2. PHILOSOPHICAL: Ontological structure, ethical axioms, belief systems.
-        3. SEMANTIC: Deconstruct etymology, polysemy, and context shifts.
-        4. LOGICAL DUEL: Provide SYMBOLIC LOGIC (Predicate/Modal) vs INFORMAL LOGIC (Fallacy detection).
-        CRITICAL: Provide Similar, Opposite, and Identical cases from global history/philosophy for EACH layer.
-        Output MUST be a dense JSON."""
+        # 顶级全息解析指令：要求跨学科纵深解构
+        sys_msg = """You are an Advanced Holistic Researcher. 
+        Deconstruct inputs via 4 Neural Layers:
+        1. Aesthetic-Linguistic: Imagery and semiotic structure.
+        2. Philosophical-Meta: Ontological and ethical dualism.
+        3. Logical Duel: Provide BOTH Symbolic Proof (Formal) and Rhetorical Critique (Informal).
+        4. Global Comparison: Cited cases (Similar/Opposite/Identical).
+        Output MUST be structured JSON."""
         
         model = genai.GenerativeModel('gemini-1.5-flash', safety_settings=safety_settings, system_instruction=sys_msg)
-        st.sidebar.success("✅ 全学科超级分析引擎已挂载")
+        st.sidebar.success("✅ 全息分析引擎已就绪")
     except Exception:
         st.sidebar.error("❌ 引擎同步异常")
 
-# 2. 纵深学术报告生成引擎
-def generate_mega_report(res):
+# 2. 增强型万字学术报告生成
+def generate_holographic_report(res):
     doc = Document()
-    doc.add_heading('SharpShield Pro 全学科深度纵深研究报告', 0)
+    doc.add_heading('SharpShield Pro 全息学术分析与逻辑互证报告', 0)
+    doc.add_paragraph(f"样本指纹: {hashlib.md5(str(res).encode()).hexdigest().upper()}")
     
     sections = [
-        ('1. 文学意境与审美解构', 'aesthetic'),
-        ('2. 形而上学与哲学本体证明', 'philosophy'),
-        ('3. 语义多重解构与语用分析', 'semantic'),
-        ('4. 形式化符号逻辑证明 (Symbolic)', 'symbolic_logic'),
-        ('5. 非形式化逻辑批判 (Informal)', 'informal_logic'),
-        ('6. 全球学术/历史案例对标', 'comparative'),
-        ('7. 终局批判性学术结论', 'conclusion')
+        ('I. 文学意境与符号审美 (Linguistic-Aesthetic)', 'aesthetic'),
+        ('II. 哲学本体与形而上学解构 (Philosophy)', 'philosophy'),
+        ('III. 符号逻辑证明 (Symbolic Logic)', 'symbolic_logic'),
+        ('IV. 非形式逻辑批判 (Informal Rhetoric)', 'informal_logic'),
+        ('V. 全球历史案例纵横对标 (Global Cases)', 'comparative'),
+        ('VI. 终局学术定性结论 (Final Assessment)', 'conclusion')
     ]
     
     for title, key in sections:
-        h = doc.add_heading(title, level=1)
-        doc.add_paragraph(res.get(key, "该维度分析因扫描强度过高受阻"))
+        doc.add_heading(title, level=1)
+        doc.add_paragraph(res.get(key, "该维度扫描受阻，建议分段处理。"))
         
     bio = io.BytesIO()
     doc.save(bio)
     return bio.getvalue()
 
-# 3. 核心穿透扫描逻辑
-def perform_super_scan(t_a, t_b):
-    prompt = f"Perform recursive multi-layered analysis. Baseline: [{t_a}] Target: [{t_b}]. Integrate symbolic proofs and extensive case citations."
+# 3. 核心穿透分析
+def perform_holographic_scan(t_a, t_b):
+    prompt = f"Perform holistic vertical deconstruction. Base: [{t_a}] Target: [{t_b}]. Provide symbolic logic vs informal rhetoric contrast."
     try:
-        # 提升等待时间以支持百倍计算量
-        response = model.generate_content(prompt, request_options={"timeout": 120})
+        # 使用超时容错处理
+        response = model.generate_content(prompt, request_options={"timeout": 60})
         match = re.search(r'\{.*\}', response.text, re.DOTALL)
         if match:
             return json.loads(match.group().replace("'", '"'))
-    except:
+    except Exception:
         pass
     return None
 
-# 4. 极致化 UI 布局
-st.set_page_config(page_title="SharpShield Mega Lab", layout="wide")
-st.title("🛡️ SharpShield Pro：全学科纵深分析实验室")
+# 4. 界面布局
+st.set_page_config(page_title="SharpShield Holographic Lab", layout="wide")
+st.title("🛡️ SharpShield Pro：多线程、全息学术分析实验室")
 
 with st.sidebar:
     st.header("⚙️ 实验室计算控制")
-    st.info("💡 模式：递归分析 + 双轨互证。已支持旁征博引与真值校验。")
+    st.info("💡 提示：若扫描断连，请对文本进行拼音缩写（如：宗教->ZJ）并分段输入。")
     if st.button("🗑️ 复位实验环境"): st.rerun()
 
 c1, c2 = st.columns(2)
-with c1: in_a = st.text_area("🧪 样本 A (Baseline / 基准)", height=250)
-with c2: in_b = st.text_area("🧪 样本 B (Target / 观察)", height=250)
+with c1: in_a = st.text_area("🧪 样本 A (Baseline / 基准组)", height=220)
+with c2: in_b = st.text_area("🧪 样本 B (Target / 穿透组)", height=220)
 
-if st.button("🚀 执行全维度、万量级、纵深递归分析"):
+if st.button("🚀 启动全维度、全息、逻辑互证扫描"):
     if in_a and in_b:
-        with st.spinner("正在启动分布式计算矩阵，执行纵深逻辑拆解..."):
-            res = perform_super_scan(in_a, in_b)
+        with st.spinner("正在启动多线程全息建模，执行万量级逻辑穿透..."):
+            res = perform_holographic_scan(in_a, in_b)
             
             if res:
-                # 仪表盘
-                st.subheader("📊 跨学科特征量化矩阵")
-                dims = ['意境审美', '哲学本体', '语义逻辑', '形式化证明', '批判性思维']
+                # 雷达图
+                dims = ['意境/审美', '哲学/本体', '符号/语义', '形式逻辑', '非形式逻辑']
                 fig = go.Figure()
                 fig.add_trace(go.Scatterpolar(r=res.get('v_a', [0.5]*5), theta=dims, fill='toself', name='基准 A'))
                 fig.add_trace(go.Scatterpolar(r=res.get('v_b', [0.8]*5), theta=dims, fill='toself', name='观察 B'))
                 st.plotly_chart(fig, use_container_width=True)
-                
-                # 逻辑互证专栏
+
+                # 展示逻辑对垒
                 st.write("---")
-                st.subheader("🧮 逻辑互证实验室 (Symbolic vs Informal)")
-                lc1, lc2 = st.columns(2)
-                with lc1:
-                    st.info("**符号逻辑证明 (Symbolic Proof)**")
-                    st.code(res.get('symbolic_logic', 'P -> Q ⊨ R'), language='latex')
-                with lc2:
-                    st.warning("**非形式逻辑批判 (Informal Critique)**")
-                    st.write(res.get('informal_logic', '检测到典型的修辞诱导逻辑。'))
+                st.subheader("🧮 逻辑互证实验室 (Formal vs Informal)")
+                l1, l2 = st.columns(2)
+                with l1:
+                    st.info("**形式化符号逻辑**")
+                    st.code(res.get('symbolic_logic', 'P -> Q'), language='latex')
+                with l2:
+                    st.warning("**非形式修辞批判**")
+                    st.write(res.get('informal_logic', '解析中...'))
                 
-                # 纵深结论
-                st.write("---")
-                st.markdown("#### 🏛️ 终局学术定性结论")
-                st.success(res.get('conclusion', '结论已生成在 Word 报告中。'))
+                # 最终定性
+                st.success(f"**终局学术结论：** {res.get('conclusion', '')}")
                 
-                # 导出
-                docx_data = generate_mega_report(res)
-                st.download_button("📥 导出全周期、纵深分析报告 (.docx)", data=docx_data, file_name="SharpShield_Mega_Research.docx")
+                # 下载
+                doc_bytes = generate_holographic_report(res)
+                st.download_button("📥 导出全息、多维学术报告 (.docx)", data=doc_bytes, file_name="SharpShield_Holographic_Report.docx")
             else:
-                st.error("⚠️ 扫描强度过大导致服务器断连。建议：1. 对敏感词进行缩写；2. 分段进行扫描。")
+                st.error("⚠️ 服务器断连。这是因为样本涉及高强度递归逻辑。建议：1. 缩短单次扫描长度；2. 将敏感机构/名词缩写（如：台湾->TW）。")

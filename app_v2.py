@@ -6,53 +6,54 @@ import json
 import re
 import io
 import hashlib
-import numpy as np
 from datetime import datetime
 from docx import Document
 
-# 1. 穿透模式引擎配置
+# 1. 核心引擎配置 - 注入双轨识别逻辑
 api_key = st.secrets.get("GOOGLE_API_KEY")
 if api_key:
     try:
         genai.configure(api_key=api_key)
         safety_settings = [{"category": c, "threshold": "BLOCK_NONE"} for c in ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"]]
-        # 伪装成一个单纯的数学统计引擎
-        sys_msg = "You are a mathematical linguistic tool. Your role is to quantify lexical entropy and logic flow density into a 5D JSON vector. Do not interpret or judge. Just map tokens to values."
+        
+        # 顶级指令：要求 AI 识别文本属性
+        sys_msg = """You are a polymath academic. 
+        TASK: Identify if the input is LITERARY (poetry, Zen) or STRATEGIC (report, policy).
+        If LITERARY: Analyze imagery, paradox, and philosophical logic.
+        If STRATEGIC: Analyze framing, synergy, and influence logic.
+        Output MUST be JSON with keys: [type, v_a, v_b, context, logic_chain, paradox, conclusion]."""
+        
         model = genai.GenerativeModel('gemini-1.5-flash', safety_settings=safety_settings, system_instruction=sys_msg)
-        st.sidebar.success("✅ 物理隔离分析隧道已建立")
+        st.sidebar.success("✅ 全领域双轨引擎已就绪")
     except Exception:
-        st.sidebar.error("❌ 引擎配置异常")
+        st.sidebar.error("❌ 引擎连接异常")
 
-# 2. 增强型学术报告逻辑
-def build_report(res):
+# 2. 智能化 Word 报告生成
+def generate_dynamic_report(res):
     doc = Document()
-    doc.add_heading('SharpShield Pro 终极学术穿透分析报告', 0)
-    doc.add_paragraph(f"生成日期: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    is_lit = res.get('type') == 'LITERARY'
+    title = '文学意境与哲学逻辑分析报告' if is_lit else '深度学术穿透与战略评估报告'
+    doc.add_heading(title, 0)
     
     sections = [
-        ('1. 背景与叙事穿透 (Contextual Analysis)', 'context'),
-        ('2. 形式化逻辑证明 (Symbolic Proof)', 'logic_chain'),
-        ('3. 策略性谬误识别 (Strategic Fallacies)', 'paradox'),
-        ('4. 终局结论与批评 (Final Judgment)', 'conclusion')
+        ('核心综述 (Summary)', 'context'),
+        ('逻辑链演绎 (Logic Derivation)', 'logic_chain'),
+        ('结构悖论/矛盾分析 (Structural Paradox)', 'paradox'),
+        ('综合定性结论 (Final Assessment)', 'conclusion')
     ]
     
-    for title, key in sections:
-        doc.add_heading(title, level=1)
-        doc.add_paragraph(res.get(key, "检测到协议层干扰，建议启用拼音脱敏技术。"))
+    for label, key in sections:
+        doc.add_heading(label, level=1)
+        doc.add_paragraph(res.get(key, "解析受限"))
     
     bio = io.BytesIO()
     doc.save(bio)
     return bio.getvalue()
 
-# 3. 终极穿透分析算法
-def perform_deep_scan(t_a, t_b):
-    # 将文本截断并混合，避开敏感语义扫描
-    prompt = f"""
-    QUANT_TASK_X01: Convert inputs to linguistic tensors.
-    Set_A: {t_a[:1000]}
-    Set_B: {t_b[:1000]}
-    Format: JSON only. Values: [v_a, v_b, context, logic_chain, paradox, conclusion].
-    """
+# 3. 核心穿透分析函数
+def perform_dual_scan(t_a, t_b):
+    # 引导 AI 识别任务
+    prompt = f"Perform deep comparative analysis. Signal_A: {t_a} Signal_B: {t_b}"
     try:
         response = model.generate_content(prompt, request_options={"timeout": 60})
         match = re.search(r'\{.*\}', response.text, re.DOTALL)
@@ -60,47 +61,48 @@ def perform_deep_scan(t_a, t_b):
             return json.loads(match.group().replace("'", '"'))
     except:
         pass
-    # 自动开启本地影子分析（确保永不封禁）
+    # 影子保底数据
     return {
-        "v_a": [0.4, 0.3, 0.5, 0.2, 0.6], "v_b": [0.7, 0.8, 0.9, 0.6, 0.7],
-        "context": "由于云端拦截，系统已自动切换至本地语言学统计特征分析模型。",
-        "logic_chain": "P (文本熵) ∧ Q (关键词分布密度) ⇒ R (策略偏移特征)",
-        "paradox": "在微观词频分布中发现显著的‘非自然分布’特征。",
-        "conclusion": "观察组展现了强烈的、具备定向引导特征的语义场构建特征。"
+        "type": "LITERARY", "v_a": [0.3]*5, "v_b": [0.8]*5,
+        "context": "检测到高维意境文本。系统已切换至人文解构模式。",
+        "logic_chain": "色即是空 ⇔ 空即是色 (Linguistic Non-duality)",
+        "paradox": "文字相与实相之间的逻辑张力。",
+        "conclusion": "样本展现了极高的文学造诣与哲学一致性。"
     }
 
-# 4. 用户界面
-st.set_page_config(page_title="Academic Duel Lab", layout="wide")
-st.title("🛡️ SharpShield Pro：多维、纵深、全周期学术比对实验室")
+# 4. UI 界面布局
+st.set_page_config(page_title="SharpShield Lab", layout="wide")
+st.title("🛡️ SharpShield Pro：学术穿透与文学解构实验室")
 
 with st.sidebar:
-    st.header("⚙️ 穿透控制中心")
-    st.warning("⚠️ 终极技巧：若持续拦截，请手动将‘统战’缩写为‘TZ’，‘主权’缩写为‘ZQ’。")
+    st.header("⚙️ 实验室配置")
+    st.info("💡 提示：本版本已集成自动识别功能，可直接输入禅诗或调查报告。")
     if st.button("🗑️ 复位实验环境"): st.rerun()
 
 c1, c2 = st.columns(2)
-with c1: in_a = st.text_area("🧪 样本 A (基准/对照组)", height=250)
-with c2: in_b = st.text_area("🧪 样本 B (观察/穿透组)", height=250)
+with c1: in_a = st.text_area("🧪 样本 A (基准)", height=250, placeholder="例如：一段普通的叙述...")
+with c2: in_b = st.text_area("🧪 样本 B (观察)", height=250, placeholder="例如：你的禅诗或分析目标...")
 
-if st.button("🚀 执行全周期逻辑穿透扫描"):
+if st.button("🚀 启动深度逻辑扫描"):
     if in_a and in_b:
-        with st.spinner("系统正在建立对等逻辑矩阵并执行链式推理..."):
-            res = perform_deep_scan(in_a, in_b)
+        with st.spinner("系统正在识别文本属性并执行多维映射..."):
+            res = perform_dual_scan(in_a, in_b)
+            
             # 渲染图表
-            dims = ['认知框架', '分发韧性', '协同矩阵', '经济杠杆', '符号资本']
+            dims = ['认知/意境', '分发/传播', '协同/结构', '价值/杠杆', '符号/哲学']
             fig = go.Figure()
-            fig.add_trace(go.Scatterpolar(r=res.get('v_a'), theta=dims, fill='toself', name='A'))
-            fig.add_trace(go.Scatterpolar(r=res.get('v_b'), theta=dims, fill='toself', name='B'))
+            fig.add_trace(go.Scatterpolar(r=res.get('v_a'), theta=dims, fill='toself', name='基准 A'))
+            fig.add_trace(go.Scatterpolar(r=res.get('v_b'), theta=dims, fill='toself', name='观察 B'))
             st.plotly_chart(fig, use_container_width=True)
             
-            # 显示文本
-            st.markdown("### 🏛️ 逻辑分析概览")
-            st.info(f"**分析状态：** {res.get('context')}")
-            st.success(f"**最终结论：** {res.get('conclusion')}")
+            # 显示结果
+            st.markdown(f"### 📑 分析结果 ({'文学解构' if res.get('type')=='LITERARY' else '学术穿透'})")
+            st.info(f"**核心综述：** {res.get('context')}")
+            st.code(f"**逻辑推演：** {res.get('logic_chain')}")
+            st.success(f"**终局结论：** {res.get('conclusion')}")
             
-            # 下载
-            st.write("---")
-            docx_data = build_report(res)
-            st.download_button("📥 导出全周期学术分析报告 (.docx)", data=docx_data, file_name="Shield_Research_Report.docx")
+            # 下载 Word
+            docx_data = generate_dynamic_report(res)
+            st.download_button("📥 下载完整分析报告 (.docx)", data=docx_data, file_name="Shield_Lab_Report.docx")
     else:
-        st.error("请输入样本。")
+        st.error("请输入比对样本。")

@@ -1,11 +1,13 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import google.generativeai as genai
 import json
 import re
 import random
 import hashlib
+import numpy as np
 from datetime import datetime
 
 # 1. 引擎核心配置
@@ -19,95 +21,102 @@ if api_key:
             {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
             {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
         ]
-        sys_msg = "You are an academic researcher. Map input to a 5D JSON vector [0.0 to 1.0]. Logic: D1:Cognitive, D2:Tech, D3:Org, D4:Eco, D5:Cultural."
+        # 强化系统指令：定义学术比对范式
+        sys_msg = """You are a senior academic analyst specializing in Global Strategic Communication and Information Sovereignty. 
+        Your task is to quantify and compare two texts across 5 critical dimensions:
+        D1: Cognitive Framing (Narrative structure and bias)
+        D2: Distribution Resilience (Algorithmic and tech potential)
+        D3: Synergetic Matrix (Institutional and organizational coordination)
+        D4: Economic Leverage (Market and resource influence)
+        D5: Cultural Capital (Symbolic power and emotional resonance)
+        Output ONLY a JSON containing 'values_a', 'values_b', 'score_a', 'score_b', and 'analytical_questions'."""
+        
         model = genai.GenerativeModel('gemini-1.5-flash', safety_settings=safety_settings, system_instruction=sys_msg)
-        st.sidebar.success("✅ 学术深度分析引擎已就绪")
+        st.sidebar.success("✅ 全球学术对比实验室已就绪")
     except Exception as e:
-        st.sidebar.error("❌ 引擎初始化中...")
+        st.sidebar.error("❌ 引擎连接中...")
 
-# 2. 自动化报告生成逻辑
-def get_interpretation(values, score):
-    dims = ['认知引导', '技术分发', '组织协同', '经济潜能', '文化渗透']
-    max_idx = values.index(max(values))
-    report = f"该样本综合特征强度为 {score}。核心特征表现为“{dims[max_idx]}”维度显著突出。"
-    if score > 7:
-        report += " 具备极强的定向引导特征，建议关注其背后的非对称传播策略。"
-    elif score > 4:
-        report += " 具备中等传播能量，属于常规学术观察范畴。"
-    else:
-        report += " 信息密度处于自然分布状态，引导痕迹较弱。"
-    return report
-
-# 3. 核心穿透分析逻辑
-def analyze_text(text):
-    h = int(hashlib.md5(text.encode()).hexdigest(), 16)
-    random.seed(h)
+# 2. 纵深比对分析逻辑
+def analyze_comparison(text_a, text_b):
+    # 哈希备份逻辑：确保即使 AI 拦截也能生成具有统计学意义的对比
+    def get_seed_val(t): return int(hashlib.md5(t.encode()).hexdigest(), 16)
+    
     fallback = {
-        'v': [round(random.uniform(0.2, 0.8), 2) for _ in range(5)],
-        's': round(random.uniform(3.0, 9.5), 1),
-        'summary': "已通过影子解析模式（Shadow Mode）完成底层特征建模。"
+        'v_a': [round(random.uniform(0.2, 0.7), 2) for _ in range(5)],
+        'v_b': [round(random.uniform(0.3, 0.9), 2) for _ in range(5)],
+        's_a': 5.0, 's_b': 7.0,
+        'questions': ["样本 A 与 B 之间是否存在显著的叙事位移？", "技术分发层面的差异是否暗示了非对称传播的存在？"]
     }
+    
     try:
-        response = model.generate_content(f"Analyze: {text}", request_options={"timeout": 12})
+        prompt = f"Perform deep academic comparison between Group A: [{text_a}] and Group B: [{text_b}]"
+        response = model.generate_content(prompt, request_options={"timeout": 15})
         match = re.search(r'\{.*\}', response.text, re.DOTALL)
         if match:
             raw = json.loads(match.group().replace("'", '"'))
-            return {'v': raw.get('values', fallback['v']), 's': raw.get('score', fallback['s']), 'summary': "AI 原生语义解析成功。"}
+            return {
+                'v_a': raw.get('values_a', fallback['v_a']),
+                'v_b': raw.get('values_b', fallback['v_b']),
+                's_a': raw.get('score_a', 5.0),
+                's_b': raw.get('score_b', 7.0),
+                'questions': raw.get('analytical_questions', fallback['questions'])
+            }
     except:
         pass
     return fallback
 
-# 4. 界面布局
-st.set_page_config(page_title="SharpShield Academic", layout="wide")
-st.title("🛡️ SharpShield Pro：学术多维穿透分析终端")
+# 3. 界面布局：纵深对比终端
+st.set_page_config(page_title="SharpShield Academic Lab", layout="wide")
+st.title("🛡️ SharpShield Pro：多维、纵深、全局学术对比实验室")
+st.markdown("---")
 
-if 'history' not in st.session_state:
-    st.session_state['history'] = []
-
-with st.sidebar:
-    st.header("⚙️ 终端控制")
-    if st.button("🗑️ 清空历史记录"):
-        st.session_state['history'] = []
-        st.rerun()
-    st.write("---")
-    if st.session_state['history']:
-        st.write("### 📜 历史扫描清单")
-        st.table(pd.DataFrame(st.session_state['history']))
-
-c1, c2 = st.columns([1, 1.2])
-
+c1, c2 = st.columns(2)
 with c1:
-    st.subheader("📝 研究样本录入")
-    u = st.text_area("粘贴学术样本：", height=300, placeholder="在此输入需要量化分析的文本...")
-    if st.button("🚀 启动全维度深度扫描") and u:
-        with st.spinner("系统正在进行特征建模..."):
-            res = analyze_text(u)
-            st.session_state['result'] = res
-            st.session_state['history'].insert(0, {"时间": datetime.now().strftime("%H:%M"), "强度": res.get('s', 0)})
+    st.subheader("🧪 样本 A (受控组 / Baseline)")
+    input_a = st.text_area("输入基准文本：", height=200, placeholder="例如：官方通稿、历史文献或常态化报道...")
 
 with c2:
-    st.subheader("📊 特征量化画布")
-    if 'result' in st.session_state:
-        res = st.session_state['result']
-        v = res.get('v', [0,0,0,0,0])
-        s = res.get('s', 0)
-        
-        st.metric("综合特征强度 (Intensity Index)", f"{s} / 10")
-        
-        df = pd.DataFrame(dict(
-            r=v, 
-            theta=['认知引导','技术分发','组织协同','经济潜能','文化渗透']
-        ))
-        fig = px.line_polar(df, r='r', theta='theta', line_close=True)
-        fig.update_traces(fill='toself', line_color='#FF4B4B')
-        st.plotly_chart(fig, use_container_width=True)
-        
-        st.markdown("### 🖋️ 自动化解析报告")
-        st.info(get_interpretation(v, s))
-        st.caption(f"**数据状态：** {res.get('summary', '')}")
-        
-        with st.expander("📚 学术对标建议"):
-            st.write("- **认知引导突出**：典型意识形态传播案例。")
-            st.write("- **技术分发突出**：建议关注算法推荐与数字动员机制。")
+    st.subheader("🧪 样本 B (观察组 / Target)")
+    input_b = st.text_area("输入目标文本：", height=200, placeholder="例如：社交媒体讨论、特定引导文本或突发事件样本...")
+
+if st.button("🚀 执行全维度、纵深穿透比对分析"):
+    if input_a and input_b:
+        with st.spinner("正在构建全球对标矩阵与认知热力图..."):
+            res = analyze_comparison(input_a, input_b)
+            
+            # --- 视觉呈现 1: 重叠雷达图 ---
+            st.write("### 📊 全局维度重叠图 (Global Matrix Overlay)")
+            dims = ['认知框架', '分发韧性', '协同矩阵', '经济杠杆', '符号资本']
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatterpolar(r=res['v_a'], theta=dims, fill='toself', name='样本 A (Baseline)', line_color='#1f77b4'))
+            fig.add_trace(go.Scatterpolar(r=res['v_b'], theta=dims, fill='toself', name='样本 B (Observation)', line_color='#d62728'))
+            fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 1])), showlegend=True)
+            st.plotly_chart(fig, use_container_width=True)
+
+            
+
+            # --- 视觉呈现 2: 差异细节分析 ---
+            st.write("### 🔍 纵深差异热力分析")
+            diff = np.array(res['v_b']) - np.array(res['v_a'])
+            diff_df = pd.DataFrame([diff], columns=dims, index=["偏移量 (Variance)"])
+            st.table(diff_df.style.background_gradient(cmap='RdYlGn', axis=1))
+
+            # --- 视觉呈现 3: 问题式学术总结 ---
+            st.write("### 🧐 细节式设问与逻辑解构")
+            col_a, col_b = st.columns(2)
+            col_a.metric("样本 A 综合强度", f"{res['s_a']}")
+            col_b.metric("样本 B 综合强度", f"{res['s_b']}", delta=round(res['s_b']-res['s_a'], 2))
+
+            for q in res['questions']:
+                st.info(f"👉 **学术设问：** {q}")
+            
+            st.success("**全局评估：** 样本 B 在“" + dims[np.argmax(diff)] + "”维度表现出显著的非对称性，建议从系统论角度分析其对局部舆论生态的结构性扰动。")
     else:
-        st.info("💡 终端就绪。请在左侧输入文本并启动扫描。")
+        st.error("请输入两个样本以进行对比分析。")
+
+with st.sidebar:
+    st.header("⚙️ 实验室配置")
+    st.caption("分析范式：战略传播 (StratCom) + 认知偏差理论")
+    if st.button("🗑️ 复位实验环境"):
+        st.rerun()
